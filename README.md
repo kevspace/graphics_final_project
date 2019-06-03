@@ -1,14 +1,14 @@
 # Ricky Lin and Kevin Wang
 
-## Amazing Group Name
+## Classical Dream Team
 
 ### List of features to implement
 
-- add meshing
+- light
+- mesh
 - shading
 
 ### Some possible features to implement
 
-- add light to symbol table
 - add new shapes
 - using vary with lights
