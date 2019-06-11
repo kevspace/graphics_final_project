@@ -1,0 +1,19 @@
+constants obsidian 0.0 0.2 0.3 0.1 0.2 0.3 0.1 0.2 0.3
+constants shiny_gold 0.2 0.8 0.6 0.2 0.6 0.6 0.0 0.2 0.4
+constants emerald 0.0 0.0 0.6 0.2 0.6 0.7 0.0 0.1 0.6
+frames 30
+basename no
+push
+move 250 250 0
+rotate x 40
+rotate z 360
+torus shiny_gold 0 0 0 15 150
+push
+rotate x 350
+torus emerald 0 0 0 15 120
+push
+rotate x 180 spinny
+rotate y 350
+torus obsidian 0 0 0 15 90
+vary spinny 0 9 0 1
+vary spinny 10 29 0 1

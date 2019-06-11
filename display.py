@@ -62,7 +62,7 @@ def save_ppm(screen, fname):
 def save_extension(screen, fname):
     ppm_name = fname[:fname.find('.')] + '.ppm'
     save_ppm(screen, ppm_name)
-    p = Popen(['convert', ppm_name, fname + '.png'], stdin = PIPE, stdout = PIPE)
+    p = Popen(['convert', ppm_name, fname + '.png'], stdin=PIPE, stdout = PIPE)
     p.communicate()
     #  remove(ppm_name)
     f = fork()
@@ -72,7 +72,7 @@ def save_extension(screen, fname):
 def display(screen):
     ppm_name = 'pic.ppm'
     save_ppm(screen, ppm_name)
-    p = Popen(['display', ppm_name], stdin = PIPE, stdout = PIPE)
+    p = Popen(['display', ppm_name], stdin=PIPE, stdout = PIPE)
     p.communicate()
     #  remove(ppm_name)
     f = fork()
@@ -86,3 +86,6 @@ def make_animation(name):
     f = fork()
     if f == 0:
         execlp('convert', 'convert', '-delay', '1.7', name_arg, name)
+    f = fork()
+    if f == 0:
+        execlp('firefox', 'firefox', 'file:///home/fierycandy/Downloads/graphics_final_project/' + name)

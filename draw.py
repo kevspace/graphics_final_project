@@ -83,6 +83,7 @@ def draw_polygons(polygons, screen, zbuffer, view, ambient, light, symbols, refl
 
         point += 3
 
+
 def add_box(polygons, x, y, z, width, height, depth):
     x1 = x + width
     y1 = y - height
@@ -218,7 +219,7 @@ def generate_torus(cx, cy, cz, r0, r1, step):
             circ = circle / float(step)
 
             x = math.cos(2 * math.pi * rot) * (r0 * math.cos(2 * math.pi * circ) + r1) + cx;
-            y = r0 * math.sin(2 * math.pi * circ) + cy;
+            y = r0 * math.sin(2*math.pi * circ) + cy;
             z = -math.sin(2 * math.pi * rot) * (r0 * math.cos(2 * math.pi * circ) + r1) + cz;
 
             points.append([x, y, z])
@@ -264,9 +265,9 @@ def draw_lines(matrix, screen, zbuffer, color):
         draw_line(int(matrix[point][0]),
                    int(matrix[point][1]),
                    matrix[point][2],
-                   int(matrix[point + 1][0]),
-                   int(matrix[point + 1][1]),
-                   matrix[point + 1][2],
+                   int(matrix[point+1][0]),
+                   int(matrix[point+1][1]),
+                   matrix[point+1][2],
                    screen, zbuffer, color)
         point += 2
 
@@ -307,11 +308,11 @@ def draw_line(x0, y0, z0, x1, y1, z1, screen, zbuffer, color):
         d_east = A
         distance = x1 - x + 1
         if (A > 0): #octant 1
-            d = A + B / 2
+            d = A + B/2
             dy_northeast = 1
             d_northeast = A + B
         else: #octant 8
-            d = A - B / 2
+            d = A - B/2
             dy_northeast = -1
             d_northeast = A - B
 
@@ -331,7 +332,7 @@ def draw_line(x0, y0, z0, x1, y1, z1, screen, zbuffer, color):
             d = A / 2 - B
             dy_east = dy_northeast = -1
             d_northeast = A - B
-            d_east = -B
+            d_east = -1 * B
             loop_start = y1
             loop_end = y
 
