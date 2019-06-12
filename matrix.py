@@ -94,10 +94,7 @@ def print_matrix(matrix):
 def ident(matrix):
     for r in range(len(matrix[0])):
         for c in range(len(matrix)):
-            if r == c:
-                matrix[c][r] = 1
-            else:
-                matrix[c][r] = 0
+            matrix[c][r] = 1 if r == c else 0
 
 #multiply m1 by m2, modifying m2 to be the product
 #m1 * m2 -> m2

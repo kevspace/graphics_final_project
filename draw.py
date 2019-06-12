@@ -55,7 +55,8 @@ def scanline_convert(polygons, i, screen, zbuffer, color):
             x1 = points[MID][0]
             z1 = points[MID][2]
 
-        draw_scanline(int(x0), z0, int(x1), z1, y, screen, zbuffer, color)
+        draw_line(int(x0), y, z0, int(x1), y, z1, screen, zbuffer, color)
+        #  draw_scanline(int(x0), z0, int(x1), z1, y, screen, zbuffer, color)
         x0 += dx0
         z0 += dz0
         x1 += dx1
@@ -77,7 +78,7 @@ def draw_polygons(polygons, screen, zbuffer, view, ambient, light, symbols, refl
         normal = calculate_normal(polygons, point)[:]
 
         #print normal
-        if normal[2] > 0:
+        if dot_product(normal, view) > 0:
             color = get_lighting(normal, view, ambient, light, symbols, reflect)
             scanline_convert(polygons, point, screen, zbuffer, color)
 
