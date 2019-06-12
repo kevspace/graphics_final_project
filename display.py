@@ -86,6 +86,3 @@ def make_animation(name):
     f = fork()
     if f == 0:
         execlp('convert', 'convert', '-delay', '1.7', name_arg, name)
-    f = fork()
-    if f == 0:
-        execlp('firefox', 'firefox', 'file:///home/fierycandy/Downloads/graphics_final_project/' + name)
