@@ -55,8 +55,70 @@ def scanline_convert(polygons, i, screen, zbuffer, color):
             x1 = points[MID][0]
             z1 = points[MID][2]
 
-        draw_line(int(x0), y, z0, int(x1), y, z1, screen, zbuffer, color)
-        #  draw_scanline(int(x0), z0, int(x1), z1, y, screen, zbuffer, color)
+        #  draw_line(int(x0), y, z0, int(x1), y, z1, screen, zbuffer, color)
+        draw_scanline(int(x0), z0, int(x1), z1, y, screen, zbuffer, color)
+        x0 += dx0
+        z0 += dz0
+        x1 += dx1
+        z1 += dz1
+        y += 1
+
+def interpolate(x0, z0, x1, z1, y, screen, zbuffer, normal, view, ambient, lights, symbols, reflect):
+    if x0 > x1:
+        tx = x0
+        tz = z0
+        x0 = x1
+        z0 = z1
+        x1 = tx
+        z1 = tz
+
+    x = x0
+    z = z0
+    delta_z = (z1 - z0) / (x1 - x0 + 1) if (x1 - x0 + 1) != 0 else 0
+
+    color = get_lighting(normal, view, ambient, lights, symbols, reflect)
+
+    while x <= x1:
+        plot(screen, zbuffer, color, x, y, z)
+        x += 1
+        z += delta_z
+
+def shading(polygons, i, screen, zbuffer, normal, view, ambient, lights, symbols, reflect):
+    flip = False
+    BOT = 0
+    TOP = 2
+    MID = 1
+
+    points = [(polygons[i][0], polygons[i][1], polygons[i][2]),
+               (polygons[i + 1][0], polygons[i + 1][1], polygons[i + 1][2]),
+               (polygons[i + 2][0], polygons[i + 2][1], polygons[i + 2][2])]
+
+    points.sort(key = lambda x: x[1])
+    x0 = points[BOT][0]
+    z0 = points[BOT][2]
+    x1 = points[BOT][0]
+    z1 = points[BOT][2]
+    y = int(points[BOT][1])
+
+    distance0 = int(points[TOP][1]) - y * 1.0 + 1
+    distance1 = int(points[MID][1]) - y * 1.0 + 1
+    distance2 = int(points[TOP][1]) - int(points[MID][1]) * 1.0 + 1
+
+    dx0 = (points[TOP][0] - points[BOT][0]) / distance0 if distance0 != 0 else 0
+    dz0 = (points[TOP][2] - points[BOT][2]) / distance0 if distance0 != 0 else 0
+    dx1 = (points[MID][0] - points[BOT][0]) / distance1 if distance1 != 0 else 0
+    dz1 = (points[MID][2] - points[BOT][2]) / distance1 if distance1 != 0 else 0
+
+    while y <= int(points[TOP][1]):
+        if (not flip and y >= int(points[MID][1])):
+            flip = True
+
+            dx1 = (points[TOP][0] - points[MID][0]) / distance2 if distance2 != 0 else 0
+            dz1 = (points[TOP][2] - points[MID][2]) / distance2 if distance2 != 0 else 0
+            x1 = points[MID][0]
+            z1 = points[MID][2]
+
+        interpolate(int(x0), z0, int(x1), z1, y, screen, zbuffer, normal, view, ambient, lights, symbols, reflect)
         x0 += dx0
         z0 += dz0
         x1 += dx1
@@ -68,22 +130,45 @@ def add_polygon(polygons, x0, y0, z0, x1, y1, z1, x2, y2, z2):
     add_point(polygons, x1, y1, z1)
     add_point(polygons, x2, y2, z2)
 
-def draw_polygons(polygons, screen, zbuffer, view, ambient, light, symbols, reflect):
+def draw_polygons(polygons, screen, zbuffer, view, ambient, lights, symbols, reflect):
     if len(polygons) < 2:
         print ('Need at least 3 points to draw')
         return
 
     point = 0
-    while point < len(polygons) - 2:
-        normal = calculate_normal(polygons, point)[:]
+    #  while point < len(polygons) - 2:
+        #  normal = calculate_normal(polygons, point)[:]
 
         #print normal
-        if dot_product(normal, view) > 0:
-            color = get_lighting(normal, view, ambient, light, symbols, reflect)
-            scanline_convert(polygons, point, screen, zbuffer, color)
+        #  if dot_product(normal, view) > 0:
+        #      color = get_lighting(normal, view, ambient, lights, symbols, reflect)
+        #      scanline_convert(polygons, point, screen, zbuffer, color)
+
+    normals = {}
+    while point < len(polygons) - 2:
+        normal = calculate_normal(polygons, point)[:]
+        if tuple(polygons[point]) in normals:
+            normals[tuple(polygons[point])] += normal
+        else:
+            normals[tuple(polygons[point])] = normal
+        if tuple(polygons[point + 1]) in normals:
+            normals[tuple(polygons[point + 1])] += normal
+        else:
+            normals[tuple(polygons[point + 1])] = normal
+        if tuple(polygons[point + 2]) in normals:
+            normals[tuple(polygons[point + 2])] += normal
+        else:
+            normals[tuple(polygons[point + 2])] = normal
 
         point += 3
 
+    point = 0
+    while point < len(polygons) - 2:
+        face_normal = calculate_normal(polygons, point)[:]
+        if dot_product(face_normal, view) > 0:
+            shading(polygons, point, screen, zbuffer, face_normal, view, ambient, lights, symbols, reflect)
+
+        point += 3
 
 def add_box(polygons, x, y, z, width, height, depth):
     x1 = x + width
@@ -225,6 +310,60 @@ def generate_torus(cx, cy, cz, r0, r1, step):
 
             points.append([x, y, z])
     return points
+
+def add_cone(polygons, x, y, z, radius, height):
+    bottom_circle = []
+    top_circle = []
+    circle_step = 300
+
+    add_circle(bottom_circle, x, y, z, 0, circle_step)
+    add_circle(top_circle, x, y, z + height, radius, circle_step)
+
+    for i in range(0, len(top_circle) - 1):
+        i += 1
+        add_polygon(edges,top_circle[0][0],
+                    top_circle[0][1],
+                    top_circle[0][2],
+                    top_circle[i][0],
+                    top_circle[i][1],
+                    top_circle[i][2],
+                    top_circle[len(top_circle) / 2 - 1][0],
+                    top_circle[len(top_circle) / 2 - 1][1],
+                    top_circle[len(top_circle) / 2 - 1][2])
+        add_polygon(edges,
+                    top_circle[0][0],
+                    top_circle[0][1],
+                    top_circle[0][2],
+                    top_circle[len(top_circle) / 2 - 1][0],
+                    top_circle[len(top_circle) / 2 - 1][1],
+                    top_circle[len(top_circle) / 2 - 1][2],
+                    top_circle[i][0],
+                    top_circle[i][1],
+                    top_circle[i][2])
+
+    rot = 1
+    for i in range(0, len(bottom_circle) - rot, rot):
+        add_polygon(edges,
+                    top_circle[i][0],
+                    top_circle[i][1],
+                    top_circle[i][2],
+                    bottom_circle[i][0],
+                    bottom_circle[i][1],
+                    bottom_circle[i][2],
+                    top_circle[i + rot][0],
+                    top_circle[i + rot][1],
+                    top_circle[i + rot][2])
+
+    for i in range(0, len(bottom_circle) - rot, rot):
+        add_polygon(edges,
+                    bottom_circle[i + rot][0],
+                    bottom_circle[i + rot][1],
+                    bottom_circle[i + rot][2],
+                    top_circle[i + rot][0],
+                    top_circle[i + rot][1],
+                    top_circle[i + rot][2],bottom_circle[i][0],
+                    bottom_circle[i][1],
+                    bottom_circle[i][2])
 
 def add_circle(points, cx, cy, cz, r, step):
     x0 = r + cx
