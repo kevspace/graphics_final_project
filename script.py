@@ -178,6 +178,7 @@ def run(filename):
                 draw_polygons(tmp, screen, zbuffer, view, ambient, lights, symbols, reflect)
                 tmp = []
                 reflect = '.white'
+<<<<<<< Updated upstream
             elif c == 'cone':
                 if command['constants']:
                     reflect = command['constants']
@@ -187,6 +188,13 @@ def run(filename):
                 draw_polygons(tmp, screen, zbuffer, view, ambient, lights, symbols, reflect)
                 tmp = []
                 reflect = '.white'
+=======
+            elif c == 'mesh':
+                mesh_faces(tmp, args[0] + ".obj")
+                matrix_mult(stack[-1], tmp)
+                draw_polygons(tmp, screen, zbuffer, view, ambient, light, symbols, reflect)
+                tmp = []
+>>>>>>> Stashed changes
             elif c == 'line':
                 add_edge(tmp,
                          args[0], args[1], args[2], args[3], args[4], args[5])
