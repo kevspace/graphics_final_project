@@ -321,7 +321,7 @@ def add_cone(polygons, x, y, z, radius, height):
 
     for i in range(0, len(top_circle) - 1):
         i += 1
-        add_polygon(edges,top_circle[0][0],
+        add_polygon(polygons,top_circle[0][0],
                     top_circle[0][1],
                     top_circle[0][2],
                     top_circle[i][0],
@@ -330,7 +330,7 @@ def add_cone(polygons, x, y, z, radius, height):
                     top_circle[len(top_circle) / 2 - 1][0],
                     top_circle[len(top_circle) / 2 - 1][1],
                     top_circle[len(top_circle) / 2 - 1][2])
-        add_polygon(edges,
+        add_polygon(polygons,
                     top_circle[0][0],
                     top_circle[0][1],
                     top_circle[0][2],
@@ -343,7 +343,7 @@ def add_cone(polygons, x, y, z, radius, height):
 
     rot = 1
     for i in range(0, len(bottom_circle) - rot, rot):
-        add_polygon(edges,
+        add_polygon(polygons,
                     top_circle[i][0],
                     top_circle[i][1],
                     top_circle[i][2],
@@ -355,7 +355,7 @@ def add_cone(polygons, x, y, z, radius, height):
                     top_circle[i + rot][2])
 
     for i in range(0, len(bottom_circle) - rot, rot):
-        add_polygon(edges,
+        add_polygon(polygons,
                     bottom_circle[i + rot][0],
                     bottom_circle[i + rot][1],
                     bottom_circle[i + rot][2],
