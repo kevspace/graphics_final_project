@@ -14,7 +14,6 @@ tokens = (
     "AMBIENT",
     "TORUS",
     "SPHERE",
-    "CONE",
     "BOX",
     "LINE",
     "MESH",
@@ -62,7 +61,6 @@ reserved = {
     "move" : "MOVE",
     "scale" : "SCALE",
     "rotate" : "ROTATE",
-    "cone" : "CONE",
     "basename" : "BASENAME",
     "save_knobs" : "SAVE_KNOBS",
     "tween" : "TWEEN",
@@ -213,23 +211,6 @@ def p_command_box(p):
     if len(p) == 10 and isinstance(p[9], str):
           cmd['cs'] = p[9]
     cmd['args'] = p[arg_start:arg_start+6]
-    commands.append(cmd)
-
-def p_command_cone(p):
-    """command : CONE NUMBER NUMBER NUMBER NUMBER NUMBER
-               | CONE NUMBER NUMBER NUMBER NUMBER NUMBER SYMBOL
-               | CONE SYMBOL NUMBER NUMBER NUMBER NUMBER NUMBER
-               | CONE SYMBOL NUMBER NUMBER NUMBER NUMBER NUMBER SYMBOL"""
-    cmd = {'op' : p[1], 'constants' : None, 'cs' : None, 'args':[]}
-    arg_start = 2
-    if isinstance(p[2], str):
-        cmd['constants'] = p[2]
-        arg_start = 3
-    if len(p) == 8 and isinstance(p[7], str):
-        cmd['cs'] = p[7]
-    if len(p) == 9 and isinstance(p[8], str):
-        cmd['cs'] = p[8]
-    cmd['args'] = p[arg_start:arg_start+5]
     commands.append(cmd)
 
 def p_command_line(p):

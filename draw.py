@@ -65,7 +65,6 @@ def scanline_convert(polygons, i, screen, zbuffer, color):
         y += 1
 
 def interpolate(x0, y0, z0, x1, y1, z1, screen, zbuffer, view, ambient, lights, symbols, reflect, colornormal0, colornormal1, shading):
-    #swap points if going right -> left
     if x0 > x1:
         xt = x0
         yt = y0
@@ -83,13 +82,13 @@ def interpolate(x0, y0, z0, x1, y1, z1, screen, zbuffer, view, ambient, lights, 
     x = x0
     y = y0
     z = z0
-    r = colornormal0[0]
-    g = colornormal0[1]
-    b = colornormal0[2]
     A = 2 * (y1 - y0)
     B = -2 * (x1 - x0)
     wide = False
     tall = False
+    r = colornormal0[0]
+    g = colornormal0[1]
+    b = colornormal0[2]
 
     if (abs(x1 - x0) >= abs(y1 - y0)): #octants 1/8
         wide = True
@@ -113,7 +112,7 @@ def interpolate(x0, y0, z0, x1, y1, z1, screen, zbuffer, view, ambient, lights, 
         dx_east = 0
         dx_northeast = 1
         distance = abs(y1 - y)
-        if ( A > 0 ): #octant 2
+        if (A > 0): #octant 2
             d = A / 2 + B
             dy_east = dy_northeast = 1
             d_northeast = A + B
@@ -142,6 +141,7 @@ def interpolate(x0, y0, z0, x1, y1, z1, screen, zbuffer, view, ambient, lights, 
         plot(screen, zbuffer, color, x, y, z)
         if ((wide and ((A > 0 and d > 0) or (A < 0 and d < 0))) or
             (tall and ((A > 0 and d < 0) or (A < 0 and d > 0 )))):
+
             x += dx_northeast
             y += dy_northeast
             d += d_northeast
@@ -153,7 +153,7 @@ def interpolate(x0, y0, z0, x1, y1, z1, screen, zbuffer, view, ambient, lights, 
         r += dr
         g += dg
         b += db
-        loop_start+= 1
+        loop_start += 1
     if shading == "phong":
         normal = [r, g, b]
         color = get_lighting(normal, view, ambient, lights, symbols, reflect)
@@ -161,15 +161,15 @@ def interpolate(x0, y0, z0, x1, y1, z1, screen, zbuffer, view, ambient, lights, 
         color = [int(r), int(g), int(b)]
     plot(screen, zbuffer, color, x, y, z)
 
-def shade(polygons, i, screen, zbuffer, view, ambient, lights, symbols, reflect, colors, shading):
+def shade(polygons, i, screen, zbuffer, view, ambient, lights, symbols, reflect, vectors, shading):
     flip = False
     BOT = 0
     TOP = 2
     MID = 1
 
-    points = [((polygons[i][0], polygons[i][1], polygons[i][2]), colors[0]),
-               ((polygons[i + 1][0], polygons[i + 1][1], polygons[i + 1][2]), colors[1]),
-               ((polygons[i + 2][0], polygons[i + 2][1], polygons[i + 2][2]), colors[2])]
+    points = [((polygons[i][0], polygons[i][1], polygons[i][2]), vectors[0]),
+               ((polygons[i + 1][0], polygons[i + 1][1], polygons[i + 1][2]), vectors[1]),
+               ((polygons[i + 2][0], polygons[i + 2][1], polygons[i + 2][2]), vectors[2])]
 
     points.sort(key = lambda x: x[0][1])
     x0 = points[BOT][0][0]
@@ -178,12 +178,9 @@ def shade(polygons, i, screen, zbuffer, view, ambient, lights, symbols, reflect,
     z1 = points[BOT][0][2]
     y = int(points[BOT][0][1])
 
-    #  distance0 = int(points[TOP][0][1]) - y * 1.0 + 1
-    #  distance1 = int(points[MID][0][1]) - y * 1.0 + 1
-    #  distance2 = int(points[TOP][0][1]) - int(points[MID][1]) * 1.0 + 1
-    distance0 = int(points[TOP][0][1]) - y * 1.0
-    distance1 = int(points[MID][0][1]) - y * 1.0
-    distance2 = int(points[TOP][0][1]) - int(points[MID][0][1]) * 1.0
+    distance0 = int(points[TOP][0][1]) - y * 1.0 + 1
+    distance1 = int(points[MID][0][1]) - y * 1.0 + 1
+    distance2 = int(points[TOP][0][1]) - int(points[MID][0][1]) * 1.0 + 1
 
     dx0 = (points[TOP][0][0] - points[BOT][0][0]) / distance0 if distance0 != 0 else 0
     dz0 = (points[TOP][0][2] - points[BOT][0][2]) / distance0 if distance0 != 0 else 0
@@ -214,9 +211,23 @@ def shade(polygons, i, screen, zbuffer, view, ambient, lights, symbols, reflect,
         b1 = points[MID][1][2]
 
     while y <= int(points[TOP][0][1]):
+        if (not flip and y >= int(points[MID][0][1])):
+            flip = True
+
+            dx1 = (points[TOP][0][0] - points[MID][0][0]) / distance2 if distance2 != 0 else 0
+            dz1 = (points[TOP][0][2] - points[MID][0][2]) / distance2 if distance2 != 0 else 0
+            x1 = points[MID][0][0]
+            z1 = points[MID][0][2]
+
+            dr1 = (points[TOP][1][0] - points[MID][1][0]) / distance2 if distance2 != 0 else 0
+            dg1 = (points[TOP][1][1] - points[MID][1][1]) / distance2 if distance2 != 0 else 0
+            db1 = (points[TOP][1][2] - points[MID][1][2]) / distance2 if distance2 != 0 else 0
+            r1 = points[MID][1][0]
+            g1 = points[MID][1][1]
+            b1 = points[MID][1][2]
+
         colornormal0 = [r0, g0, b0]
         colornormal1 = [r1, g1, b1]
-
         interpolate(int(x0), y, z0, int(x1), y, z1, screen, zbuffer, view, ambient, lights, symbols, reflect, colornormal0, colornormal1, shading)
         x0 += dx0
         z0 += dz0
@@ -229,29 +240,6 @@ def shade(polygons, i, screen, zbuffer, view, ambient, lights, symbols, reflect,
         r1 += dr1
         g1 += dg1
         b1 += db1
-
-        if (not flip and y >= int(points[MID][0][1])):
-            flip = True
-
-            dx1 = (points[TOP][0][0] - points[MID][0][0]) / distance2 if distance2 != 0 else 0
-            dz1 = (points[TOP][0][2] - points[MID][0][2]) / distance2 if distance2 != 0 else 0
-            x1 = points[MID][0][0]
-            z1 = points[MID][0][2]
-
-
-            dr1 = (points[TOP][1][0] - points[MID][1][0]) / distance2 if distance2 != 0 else 0
-            dg1 = (points[TOP][1][1] - points[MID][1][1]) / distance2 if distance2 != 0 else 0
-            db1 = (points[TOP][1][2] - points[MID][1][2]) / distance2 if distance2 != 0 else 0
-            r1 = points[MID][1][0]
-            g1 = points[MID][1][1]
-            b1 = points[MID][1][2]
-
-        #  interpolate(int(x0), z0, int(x1), z1, y, screen, zbuffer, normal, view, ambient, lights, symbols, reflect)
-        #  x0 += dx0
-        #  z0 += dz0
-        #  x1 += dx1
-        #  z1 += dz1
-        #  y += 1
 
 def mesh_points(filename):
     points = []
@@ -469,60 +457,6 @@ def generate_torus(cx, cy, cz, r0, r1, step):
             points.append([x, y, z])
     return points
 
-def add_cone(polygons, x, y, z, radius, height):
-    bottom_circle = []
-    top_circle = []
-    circle_step = 300
-
-    add_circle(bottom_circle, x, y, z, 0, circle_step)
-    add_circle(top_circle, x, y, z + height, radius, circle_step)
-
-    for i in range(0, len(top_circle) - 1):
-        i += 1
-        add_polygon(polygons,top_circle[0][0],
-                    top_circle[0][1],
-                    top_circle[0][2],
-                    top_circle[i][0],
-                    top_circle[i][1],
-                    top_circle[i][2],
-                    top_circle[len(top_circle) / 2 - 1][0],
-                    top_circle[len(top_circle) / 2 - 1][1],
-                    top_circle[len(top_circle) / 2 - 1][2])
-        add_polygon(polygons,
-                    top_circle[0][0],
-                    top_circle[0][1],
-                    top_circle[0][2],
-                    top_circle[len(top_circle) / 2 - 1][0],
-                    top_circle[len(top_circle) / 2 - 1][1],
-                    top_circle[len(top_circle) / 2 - 1][2],
-                    top_circle[i][0],
-                    top_circle[i][1],
-                    top_circle[i][2])
-
-    rot = 1
-    for i in range(0, len(bottom_circle) - rot, rot):
-        add_polygon(polygons,
-                    top_circle[i][0],
-                    top_circle[i][1],
-                    top_circle[i][2],
-                    bottom_circle[i][0],
-                    bottom_circle[i][1],
-                    bottom_circle[i][2],
-                    top_circle[i + rot][0],
-                    top_circle[i + rot][1],
-                    top_circle[i + rot][2])
-
-    for i in range(0, len(bottom_circle) - rot, rot):
-        add_polygon(polygons,
-                    bottom_circle[i + rot][0],
-                    bottom_circle[i + rot][1],
-                    bottom_circle[i + rot][2],
-                    top_circle[i + rot][0],
-                    top_circle[i + rot][1],
-                    top_circle[i + rot][2],bottom_circle[i][0],
-                    bottom_circle[i][1],
-                    bottom_circle[i][2])
-
 def add_circle(points, cx, cy, cz, r, step):
     x0 = r + cx
     y0 = cy
@@ -606,11 +540,11 @@ def draw_line(x0, y0, z0, x1, y1, z1, screen, zbuffer, color):
         d_east = A
         distance = x1 - x + 1
         if (A > 0): #octant 1
-            d = A + B/2
+            d = A + B / 2
             dy_northeast = 1
             d_northeast = A + B
         else: #octant 8
-            d = A - B/2
+            d = A - B / 2
             dy_northeast = -1
             d_northeast = A - B
 
@@ -630,7 +564,7 @@ def draw_line(x0, y0, z0, x1, y1, z1, screen, zbuffer, color):
             d = A / 2 - B
             dy_east = dy_northeast = -1
             d_northeast = A - B
-            d_east = -1 * B
+            d_east = -B
             loop_start = y1
             loop_end = y
 
@@ -639,7 +573,7 @@ def draw_line(x0, y0, z0, x1, y1, z1, screen, zbuffer, color):
     while (loop_start < loop_end):
         plot(screen, zbuffer, color, x, y, z)
         if ((wide and ((A > 0 and d > 0) or (A < 0 and d < 0))) or
-             (tall and ((A > 0 and d < 0) or (A < 0 and d > 0)))):
+            (tall and ((A > 0 and d < 0) or (A < 0 and d > 0)))):
 
             x += dx_northeast
             y += dy_northeast

@@ -65,8 +65,8 @@ def save_extension(screen, fname):
     p = Popen(['convert', ppm_name, fname + '.png'], stdin=PIPE, stdout = PIPE)
     p.communicate()
     remove(ppm_name)
-    # f = fork()
-    # if f == 0:
+    #  f = fork()
+    #  if f == 0:
     #     execlp('shred', 'shred', '-u', ppm_name)
 
 def display(screen):
@@ -75,8 +75,8 @@ def display(screen):
     p = Popen(['display', ppm_name], stdin=PIPE, stdout = PIPE)
     p.communicate()
     remove(ppm_name)
-    # f = fork()
-    # if f == 0:
+    #  f = fork()
+    #  if f == 0:
     #     execlp('shred', 'shred', '-u', ppm_name)
 
 def make_animation(name):
