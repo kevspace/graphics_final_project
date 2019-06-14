@@ -64,70 +64,197 @@ def scanline_convert(polygons, i, screen, zbuffer, color):
         z1 += dz1
         y += 1
 
-def interpolate(x0, z0, x1, z1, y, screen, zbuffer, normal, view, ambient, lights, symbols, reflect):
+def interpolate(x0, y0, z0, x1, y1, z1, screen, zbuffer, view, ambient, lights, symbols, reflect, colornormal0, colornormal1, shading):
+    #swap points if going right -> left
     if x0 > x1:
-        tx = x0
-        tz = z0
+        xt = x0
+        yt = y0
+        zt = z0
         x0 = x1
+        y0 = y1
         z0 = z1
-        x1 = tx
-        z1 = tz
+        x1 = xt
+        y1 = yt
+        z1 = zt
+        colornormal2 = colornormal0
+        colornormal0 = colornormal1
+        colornormal1 = colornormal2
 
     x = x0
+    y = y0
     z = z0
-    delta_z = (z1 - z0) / (x1 - x0 + 1) if (x1 - x0 + 1) != 0 else 0
+    r = colornormal0[0]
+    g = colornormal0[1]
+    b = colornormal0[2]
+    A = 2 * (y1 - y0)
+    B = -2 * (x1 - x0)
+    wide = False
+    tall = False
 
-    color = get_lighting(normal, view, ambient, lights, symbols, reflect)
+    if (abs(x1 - x0) >= abs(y1 - y0)): #octants 1/8
+        wide = True
+        loop_start = x
+        loop_end = x1
+        dx_east = dx_northeast = 1
+        dy_east = 0
+        d_east = A
+        distance = x1 - x
+        if (A > 0): #octant 1
+            d = A + B / 2
+            dy_northeast = 1
+            d_northeast = A + B
+        else: #octant 8
+            d = A - B / 2
+            dy_northeast = -1
+            d_northeast = A - B
 
-    while x <= x1:
+    else: #octants 2/7
+        tall = True
+        dx_east = 0
+        dx_northeast = 1
+        distance = abs(y1 - y)
+        if ( A > 0 ): #octant 2
+            d = A / 2 + B
+            dy_east = dy_northeast = 1
+            d_northeast = A + B
+            d_east = B
+            loop_start = y
+            loop_end = y1
+        else: #octant 7
+            d = A / 2 - B
+            dy_east = dy_northeast = -1
+            d_northeast = A - B
+            d_east = -B
+            loop_start = y1
+            loop_end = y
+
+    dz = (z1 - z0) / distance if distance != 0 else 0
+    dr = (colornormal1[0] - colornormal0[0]) / distance if distance != 0 else 0
+    dg = (colornormal1[1] - colornormal0[1]) / distance if distance != 0 else 0
+    db = (colornormal1[2] - colornormal0[2]) / distance if distance != 0 else 0
+
+    while (loop_start < loop_end):
+        if shading == 'phong':
+            normal = [r, g, b]
+            color = get_lighting(normal, view, ambient, lights, symbols, reflect)
+        else:
+            color = [int(r), int(g), int(b)]
         plot(screen, zbuffer, color, x, y, z)
-        x += 1
-        z += delta_z
+        if ((wide and ((A > 0 and d > 0) or (A < 0 and d < 0))) or
+            (tall and ((A > 0 and d < 0) or (A < 0 and d > 0 )))):
+            x += dx_northeast
+            y += dy_northeast
+            d += d_northeast
+        else:
+            x += dx_east
+            y += dy_east
+            d += d_east
+        z += dz
+        r += dr
+        g += dg
+        b += db
+        loop_start+= 1
+    if shading == "phong":
+        normal = [r, g, b]
+        color = get_lighting(normal, view, ambient, lights, symbols, reflect)
+    else:
+        color = [int(r), int(g), int(b)]
+    plot(screen, zbuffer, color, x, y, z)
 
-def shading(polygons, i, screen, zbuffer, normal, view, ambient, lights, symbols, reflect):
+def shade(polygons, i, screen, zbuffer, view, ambient, lights, symbols, reflect, colors, shading):
     flip = False
     BOT = 0
     TOP = 2
     MID = 1
 
-    points = [(polygons[i][0], polygons[i][1], polygons[i][2]),
-               (polygons[i + 1][0], polygons[i + 1][1], polygons[i + 1][2]),
-               (polygons[i + 2][0], polygons[i + 2][1], polygons[i + 2][2])]
+    points = [((polygons[i][0], polygons[i][1], polygons[i][2]), colors[0]),
+               ((polygons[i + 1][0], polygons[i + 1][1], polygons[i + 1][2]), colors[1]),
+               ((polygons[i + 2][0], polygons[i + 2][1], polygons[i + 2][2]), colors[2])]
 
-    points.sort(key = lambda x: x[1])
-    x0 = points[BOT][0]
-    z0 = points[BOT][2]
-    x1 = points[BOT][0]
-    z1 = points[BOT][2]
-    y = int(points[BOT][1])
+    points.sort(key = lambda x: x[0][1])
+    x0 = points[BOT][0][0]
+    z0 = points[BOT][0][2]
+    x1 = points[BOT][0][0]
+    z1 = points[BOT][0][2]
+    y = int(points[BOT][0][1])
 
-    distance0 = int(points[TOP][1]) - y * 1.0 + 1
-    distance1 = int(points[MID][1]) - y * 1.0 + 1
-    distance2 = int(points[TOP][1]) - int(points[MID][1]) * 1.0 + 1
+    #  distance0 = int(points[TOP][0][1]) - y * 1.0 + 1
+    #  distance1 = int(points[MID][0][1]) - y * 1.0 + 1
+    #  distance2 = int(points[TOP][0][1]) - int(points[MID][1]) * 1.0 + 1
+    distance0 = int(points[TOP][0][1]) - y * 1.0
+    distance1 = int(points[MID][0][1]) - y * 1.0
+    distance2 = int(points[TOP][0][1]) - int(points[MID][0][1]) * 1.0
 
-    dx0 = (points[TOP][0] - points[BOT][0]) / distance0 if distance0 != 0 else 0
-    dz0 = (points[TOP][2] - points[BOT][2]) / distance0 if distance0 != 0 else 0
-    dx1 = (points[MID][0] - points[BOT][0]) / distance1 if distance1 != 0 else 0
-    dz1 = (points[MID][2] - points[BOT][2]) / distance1 if distance1 != 0 else 0
+    dx0 = (points[TOP][0][0] - points[BOT][0][0]) / distance0 if distance0 != 0 else 0
+    dz0 = (points[TOP][0][2] - points[BOT][0][2]) / distance0 if distance0 != 0 else 0
+    dx1 = (points[MID][0][0] - points[BOT][0][0]) / distance1 if distance1 != 0 else 0
+    dz1 = (points[MID][0][2] - points[BOT][0][2]) / distance1 if distance1 != 0 else 0
 
-    while y <= int(points[TOP][1]):
-        if (not flip and y >= int(points[MID][1])):
-            flip = True
+    r0 = points[BOT][1][0]
+    g0 = points[BOT][1][1]
+    b0 = points[BOT][1][2]
+    r1 = points[BOT][1][0]
+    g1 = points[BOT][1][1]
+    b1 = points[BOT][1][2]
 
-            dx1 = (points[TOP][0] - points[MID][0]) / distance2 if distance2 != 0 else 0
-            dz1 = (points[TOP][2] - points[MID][2]) / distance2 if distance2 != 0 else 0
-            x1 = points[MID][0]
-            z1 = points[MID][2]
+    dr0 = (points[TOP][1][0] - points[BOT][1][0]) / distance0 if distance0 != 0 else 0
+    dg0 = (points[TOP][1][1] - points[BOT][1][1]) / distance0 if distance0 != 0 else 0
+    db0 = (points[TOP][1][2] - points[BOT][1][2]) / distance0 if distance0 != 0 else 0
+    dr1 = (points[MID][1][0] - points[BOT][1][0]) / distance1 if distance1 != 0 else 0
+    dg1 = (points[MID][1][1] - points[BOT][1][1]) / distance1 if distance1 != 0 else 0
+    db1 = (points[MID][1][2] - points[BOT][1][2]) / distance1 if distance1 != 0 else 0
 
-        interpolate(int(x0), z0, int(x1), z1, y, screen, zbuffer, normal, view, ambient, lights, symbols, reflect)
+    if distance0 == 0:
+        r1 = points[TOP][1][0]
+        g1 = points[TOP][1][1]
+        b1 = points[TOP][1][2]
+    elif distance1 == 0:
+        r1 = points[MID][1][0]
+        g1 = points[MID][1][1]
+        b1 = points[MID][1][2]
+
+    while y <= int(points[TOP][0][1]):
+        colornormal0 = [r0, g0, b0]
+        colornormal1 = [r1, g1, b1]
+
+        interpolate(int(x0), y, z0, int(x1), y, z1, screen, zbuffer, view, ambient, lights, symbols, reflect, colornormal0, colornormal1, shading)
         x0 += dx0
         z0 += dz0
         x1 += dx1
         z1 += dz1
         y += 1
+        r0 += dr0
+        g0 += dg0
+        b0 += db0
+        r1 += dr1
+        g1 += dg1
+        b1 += db1
 
-def mesh_points(filename): 
-    points = [] 
+        if (not flip and y >= int(points[MID][0][1])):
+            flip = True
+
+            dx1 = (points[TOP][0][0] - points[MID][0][0]) / distance2 if distance2 != 0 else 0
+            dz1 = (points[TOP][0][2] - points[MID][0][2]) / distance2 if distance2 != 0 else 0
+            x1 = points[MID][0][0]
+            z1 = points[MID][0][2]
+
+
+            dr1 = (points[TOP][1][0] - points[MID][1][0]) / distance2 if distance2 != 0 else 0
+            dg1 = (points[TOP][1][1] - points[MID][1][1]) / distance2 if distance2 != 0 else 0
+            db1 = (points[TOP][1][2] - points[MID][1][2]) / distance2 if distance2 != 0 else 0
+            r1 = points[MID][1][0]
+            g1 = points[MID][1][1]
+            b1 = points[MID][1][2]
+
+        #  interpolate(int(x0), z0, int(x1), z1, y, screen, zbuffer, normal, view, ambient, lights, symbols, reflect)
+        #  x0 += dx0
+        #  z0 += dz0
+        #  x1 += dx1
+        #  z1 += dz1
+        #  y += 1
+
+def mesh_points(filename):
+    points = []
     with open(filename, 'r') as f:
         for line in f.readlines():
             line = re.sub(' +', ' ', line).split(" ")
@@ -151,49 +278,51 @@ def mesh_faces(edges, filename):
                                         points[p1][0], points[p1][1], points[p1][2],
                                         points[p2][0], points[p2][1], points[p2][2])
                     count += 1
-      
+
 def add_polygon(polygons, x0, y0, z0, x1, y1, z1, x2, y2, z2):
     add_point(polygons, x0, y0, z0)
     add_point(polygons, x1, y1, z1)
     add_point(polygons, x2, y2, z2)
 
-def draw_polygons(polygons, screen, zbuffer, view, ambient, lights, symbols, reflect):
+def draw_polygons(polygons, screen, zbuffer, view, ambient, lights, symbols, reflect, shading):
     if len(polygons) < 2:
         print ('Need at least 3 points to draw')
         return
 
     point = 0
-    #  while point < len(polygons) - 2:
-        #  normal = calculate_normal(polygons, point)[:]
+    if shading == 'gouraud' or shading == 'phong':
+        normals = {}
+        while point < len(polygons) - 2:
+            normal = calculate_normal(polygons, point)[:]
+            normals[tuple(polygons[point])] = [normals[tuple(polygons[point])][0] + normal[0], normals[tuple(polygons[point])][1] + normal[1], normals[tuple(polygons[point])][2] + normal[2]] if tuple(polygons[point]) in normals else normal
+            normals[tuple(polygons[point + 1])] = [normals[tuple(polygons[point + 1])][0] + normal[0], normals[tuple(polygons[point + 1])][1] + normal[1], normals[tuple(polygons[point + 1])][2] + normal[2]] if tuple(polygons[point + 1]) in normals else normal
+            normals[tuple(polygons[point + 2])] = [normals[tuple(polygons[point + 2])][0] + normal[0], normals[tuple(polygons[point + 2])][1] + normal[1], normals[tuple(polygons[point + 2])][2] + normal[2]] if tuple(polygons[point + 2]) in normals else normal
 
-        #print normal
-        #  if dot_product(normal, view) > 0:
-        #      color = get_lighting(normal, view, ambient, lights, symbols, reflect)
-        #      scanline_convert(polygons, point, screen, zbuffer, color)
-
-    normals = {}
-    while point < len(polygons) - 2:
-        normal = calculate_normal(polygons, point)[:]
-        if tuple(polygons[point]) in normals:
-            normals[tuple(polygons[point])] += normal
-        else:
-            normals[tuple(polygons[point])] = normal
-        if tuple(polygons[point + 1]) in normals:
-            normals[tuple(polygons[point + 1])] += normal
-        else:
-            normals[tuple(polygons[point + 1])] = normal
-        if tuple(polygons[point + 2]) in normals:
-            normals[tuple(polygons[point + 2])] += normal
-        else:
-            normals[tuple(polygons[point + 2])] = normal
-
-        point += 3
+            point += 3
 
     point = 0
     while point < len(polygons) - 2:
         face_normal = calculate_normal(polygons, point)[:]
         if dot_product(face_normal, view) > 0:
-            shading(polygons, point, screen, zbuffer, face_normal, view, ambient, lights, symbols, reflect)
+            if shading == 'flat':
+                color = get_lighting(face_normal, view, ambient, lights, symbols, reflect)
+                scanline_convert(polygons, point, screen, zbuffer, color)
+            elif shading == 'gouraud':
+                normal0 = normals[tuple(polygons[point])]
+                normal1 = normals[tuple(polygons[point + 1])]
+                normal2 = normals[tuple(polygons[point + 2])]
+                color = get_lighting(normal, view, ambient, lights, symbols, reflect)
+                color0 = get_lighting(normal0, view, ambient, lights, symbols, reflect)
+                color1 = get_lighting(normal1, view, ambient, lights, symbols, reflect)
+                color2 = get_lighting(normal2, view, ambient, lights, symbols, reflect)
+                colors = [color0, color1, color2]
+                shade(polygons, point, screen, zbuffer, view, ambient, lights, symbols, reflect, colors, shading)
+            elif shading == 'phong':
+                normal0 = normals[tuple(polygons[point])]
+                normal1 = normals[tuple(polygons[point + 1])]
+                normal2 = normals[tuple(polygons[point + 2])]
+                normalss = [normal0, normal1, normal2]
+                shade(polygons, point, screen, zbuffer, view, ambient, lights, symbols, reflect, normalss, shading)
 
         point += 3
 
