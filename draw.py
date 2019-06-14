@@ -255,29 +255,31 @@ def shade(polygons, i, screen, zbuffer, view, ambient, lights, symbols, reflect,
 
 def mesh_points(filename):
     points = []
-    with open(filename, 'r') as f:
-        for line in f.readlines():
-            line = re.sub(' +', ' ', line).split(" ")
-            if line[0] == 'v':
-                points.append([float(line[1]), float(line[2]), float(line[3])])
+    f = open(filename, 'r')
+    for line in f.readlines():
+        line = re.sub(' +', ' ', line).split(" ")
+        if line[0] == 'v':
+            points.append([float(line[1]), float(line[2]), float(line[3])])
+    f.close()
     return points
 
 def mesh_faces(edges, filename):
     points = mesh_points(filename)
-    with open(filename, 'r') as f:
-        for line in f.readlines():
-            line = re.sub(' +', ' ', line).split(" ")
-            if line[0] == 'f':
-                count = 2
-                vertices = line[1:]
-                while count < len(vertices):
+    f = open(filename, 'r')
+    for line in f.readlines():
+    	line = re.sub(' +', ' ', line).split(" ")
+        if line[0] == 'f':
+        	count = 2
+        	vertices = line[1:]
+        	while count < len(vertices):
                     p0 = int(vertices[0]) - 1
                     p1 = int(vertices[count - 1]) - 1
                     p2 = int(vertices[count]) - 1
-                    add_polygon( edges, points[p0][0], points[p0][1], points[p0][2],
-                                        points[p1][0], points[p1][1], points[p1][2],
-                                        points[p2][0], points[p2][1], points[p2][2])
+                    add_polygon(edges, points[p0][0], points[p0][1], points[p0][2],
+                                       points[p1][0], points[p1][1], points[p1][2],
+                                       points[p2][0], points[p2][1], points[p2][2])
                     count += 1
+	f.close()
 
 def add_polygon(polygons, x0, y0, z0, x1, y1, z1, x2, y2, z2):
     add_point(polygons, x0, y0, z0)
