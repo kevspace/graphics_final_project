@@ -195,7 +195,7 @@ def run(filename):
             elif c == 'mesh':
                 mesh_faces(tmp, args[0] + ".obj")
                 matrix_mult(stack[-1], tmp)
-                draw_polygons(tmp, screen, zbuffer, view, ambient, light, symbols, reflect, shading)
+                draw_polygons(tmp, screen, zbuffer, view, ambient, lights, symbols, reflect, shading)
                 tmp = []
             elif c == 'line':
                 add_edge(tmp,

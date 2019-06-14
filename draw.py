@@ -275,9 +275,9 @@ def mesh_faces(edges, filename):
                     p0 = int(vertices[0]) - 1
                     p1 = int(vertices[count - 1]) - 1
                     p2 = int(vertices[count]) - 1
-                    add_polygon(edges, points[p0][0], points[p0][1], points[p0][2],
-                                       points[p1][0], points[p1][1], points[p1][2],
-                                       points[p2][0], points[p2][1], points[p2][2])
+                    add_polygon(edges, points[p0][0] * 20, points[p0][1] * 20, points[p0][2] * 20,
+                                       points[p1][0] * 20, points[p1][1] * 20, points[p1][2] * 20,
+                                       points[p2][0] * 20, points[p2][1] * 20, points[p2][2] * 20)
                     count += 1
 	f.close()
 
