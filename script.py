@@ -135,7 +135,7 @@ def run(filename):
         screen = new_screen()
         zbuffer = new_zbuffer()
         tmp = []
-        step_3d = 20
+        step_3d = 100
         consts = ''
         coords = []
         coords1 = []
