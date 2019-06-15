@@ -32,4 +32,4 @@ Mesh is called as:
 mesh :name.obj
 ```
 
-If you have an .obj file in the directory, you replace the name with the name of the obj file. Currently, our mesh command only works for files with both v (vertex) and f (face) lines. If only one is provided, it will not draw anything. Our mesh command also does not recognize more complex obj lines than v and f like vn.  
+If you have an .obj file in the directory, you replace the name with the name of the obj file. Currently, our mesh command only works for files with both v (vertex) and f (face) lines. If only one is provided, it will not draw anything. Our mesh command also does not recognize more complex obj lines than v and f like vn. Since many things that we are drawing using mesh files are extremely small as defined in their obj files, we multiplied the points by 10 to make them clearly visible.  
